@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>Nghe và tìm chữ</title>
+
+<style>
+body{
+  margin:0;
+  background:linear-gradient(135deg,#f6d365,#fda085);
+  font-family:"Comic Sans MS", sans-serif;
+  overflow-x:hidden;
+  text-align:center;
+}
+
+/* Nút điều khiển đầu trang */
+#top-buttons{
+  position:fixed;
+  top:10px; right:10px;
+  display:flex; flex-direction:column;
+  gap:10px;
+  z-index:200;
+}
+
+button{
+  padding:14px 24px;
+  font-size:20px;
+  border:none;
+  border-radius:16px;
+  background:#ff6bcb;
+  color:white;
+  cursor:pointer;
+  box-shadow:0 4px 10px rgba(0,0,0,0.2);
+  transition:0.1s;
+}
+button:active{ transform:scale(0.95); }
+
+/* Nút nghe */
+.big-btn{
+  position:fixed;
+  bottom:20px;
+  left:50%;
+  transform:translateX(-50%);
+  background:#6c5ce7;
+  font-size:28px; /* nhỏ 1,5 lần */
+  padding:15px 30px;
+  border-radius:20px;
+  display:none;
+  z-index:150;
+}
+
+/* 3 ô chữ */
+#letters{
+  margin-top:50px; /* giảm cao hơn nữa */
+  display:flex;
+  justify-content:center;
+  gap:50px;
+}
+
+.letter-box{
+  width:195px;   
+  height:195px;  
+  background:white;
+  border-radius:25px;
+  font-size:105px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  box-shadow:0 4px 12px rgba(0,0,0,0.2);
+  cursor:pointer;
+  transition:0.2s;
+}
+.letter-box:active{ transform:scale(0.9); }
+
+/* Rung khi sai */
+.shake{
+  animation:shake 0.4s;
+}
+@keyframes shake{
+  0%,100%{ transform:translateX(0); }
+  25%{ transform:translateX(-10px); }
+  50%{ transform:translateX(10px); }
+  75%{ transform:translateX(-10px); }
+}
+
+/* Vùng hình minh hoạ */
+#result-area{
+  margin-top:30px;
+  display:flex;
+  justify-content:center;
+  gap:45px;
+  min-height:300px;
+}
+
+.result-item{
+  width:225px;   
+  height:225px;  
+  background:white;
+  border-radius:25px;
+  box-shadow:0 4px 12px rgba(0,0,0,0.25);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+.result-item img{
+  width:90%;
+  height:90%;
+  object-fit:contain;
+}
+
+/* Pháo hoa + Tuyết Noel */
+.firework, .snowflake{
+  position:fixed;
+  width:10px;
+  height:10px;
+  border-radius:50%;
+  pointer-events:none;
+}
+
+.firework{
+  background:yellow;
+  animation:boom 1s forwards;
+}
+@keyframes boom{
+  0%{ transform:scale(1); opacity:1; }
+  100%{ transform:scale(20); opacity:0; }
+}
+
+.snowflake{
+  background:white;
+  animation:snow 5s linear infinite;
+}
+@keyframes snow{
+  0%{ transform:translateY(-10px) rotate(0deg); opacity:1;}
+  100%{ transform:translateY(100vh) rotate(360deg); opacity:0.5;}
+}
+</style>
+</head>
+<body>
+
+<!-- Nút điều khiển -->
+<div id="top-buttons">
+  <button id="btnStart">Bắt đầu</button>
+  <button id="btnRestart">Chơi lại</button>
+  <button id="btnEnd">Kết thúc</button>
+</div>
+
+<!-- Vùng hình minh hoạ -->
+<div id="result-area"></div>
+
+<!-- 3 chữ -->
+<div id="letters">
+  <div class="letter-box" data-letter="a">a</div>
+  <div class="letter-box" data-letter="ă">ă</div>
+  <div class="letter-box" data-letter="â">â</div>
+</div>
+
+<!-- Nút nghe -->
+<button id="btnListen" class="big-btn">Nghe</button>
+<button id="btnNext" class="big-btn">Nghe tiếp</button>
+
+<script>
+// Âm thanh
+const sounds = {
+  "a": new Audio("audio/a.mp3"),
+  "ă": new Audio("audio/ă.mp3"),
+  "â": new Audio("audio/â.mp3"),
+  "correct": new Audio("audio/correct.mp3"),
+  "wrong": new Audio("audio/wrong.mp3"),
+  "complete": new Audio("audio/complete.mp3") // âm thanh chúc mừng
+};
+
+// Cấu hình game
+let remaining = [];
+let currentLetter = "";
+let gameActive = false;
+
+// Nút điều khiển
+const btnStart = document.getElementById("btnStart");
+const btnRestart = document.getElementById("btnRestart");
+const btnEnd = document.getElementById("btnEnd");
+const btnListen = document.getElementById("btnListen");
+const btnNext = document.getElementById("btnNext");
+
+// Nút bấm
+btnStart.addEventListener("click", startGame);
+btnRestart.addEventListener("click", startGame);
+btnEnd.addEventListener("click", endGame);
+
+// KHỞI ĐỘNG GAME (chỉ reset, không phát âm)
+function startGame(){
+  remaining = ["a","ă","â"];
+  currentLetter = "";
+  gameActive = true;
+  document.getElementById("result-area").innerHTML = "";
+  btnListen.style.display = "block";
+  btnNext.style.display = "none";
+}
+
+// Kết thúc
+function endGame(){
+  gameActive = false;
+  currentLetter = "";
+  btnListen.style.display = "none";
+  btnNext.style.display = "none";
+}
+
+// Chọn chữ tiếp theo
+function chooseNextLetter(){
+  if(remaining.length === 0){
+    finishGame();
+    return;
+  }
+  currentLetter = remaining[Math.floor(Math.random()*remaining.length)];
+  btnListen.style.display = "block";
+  btnNext.style.display = "none";
+}
+
+// Phát âm thanh ngay
+function playAudioImmediate(letter){
+  if(!gameActive || !letter) return;
+  let audio = sounds[letter];
+  audio.pause();
+  audio.currentTime = 0;
+  audio.play();
+}
+
+// Nút Nghe
+btnListen.addEventListener("click", ()=>{
+  if(currentLetter==="") chooseNextLetter();
+  playAudioImmediate(currentLetter);
+});
+
+// Nút Nghe tiếp
+btnNext.addEventListener("click", ()=>{
+  chooseNextLetter();
+  playAudioImmediate(currentLetter);
+});
+
+// Chọn chữ
+document.querySelectorAll(".letter-box").forEach(box=>{
+  box.addEventListener("click",()=>{
+    if(!gameActive) return;
+    if(currentLetter==="") return;
+    let chosen = box.dataset.letter;
+    if(chosen === currentLetter){
+      correctAnswer(chosen);
+    } else {
+      wrongAnswer(box);
+    }
+  });
+});
+
+// Sai
+function wrongAnswer(box){
+  sounds.wrong.pause();
+  sounds.wrong.currentTime = 0;
+  sounds.wrong.play();
+  box.classList.add("shake");
+  setTimeout(()=>box.classList.remove("shake"),400);
+}
+
+// Đúng
+function correctAnswer(letter){
+  sounds.correct.pause();
+  sounds.correct.currentTime = 0;
+  sounds.correct.play();
+  fireworks();
+  snowEffect();
+
+  remaining = remaining.filter(l=>l!==letter);
+
+  let area = document.getElementById("result-area");
+  let div = document.createElement("div");
+  div.className = "result-item";
+  div.innerHTML = `<img src="images/${letter}.png">`;
+  area.appendChild(div);
+
+  currentLetter = "";
+
+  if(remaining.length > 0){
+    btnListen.style.display = "none";
+    btnNext.style.display = "block";
+  } else {
+    finishGame();
+  }
+}
+
+// Hoàn thành
+function finishGame(){
+  gameActive = false;
+  btnListen.style.display = "none";
+  btnNext.style.display = "none";
+  fireworks();
+  snowEffect();
+  // phát âm thanh chúc mừng
+  sounds.complete.pause();
+  sounds.complete.currentTime = 0;
+  sounds.complete.play();
+}
+
+// Pháo hoa
+function fireworks(){
+  for(let i=0;i<10;i++){
+    let f = document.createElement("div");
+    f.className="firework";
+    f.style.left = (Math.random()*window.innerWidth)+"px";
+    f.style.top = (Math.random()*window.innerHeight/2)+"px";
+    document.body.appendChild(f);
+    setTimeout(()=>f.remove(),1000);
+  }
+}
+
+// Tuyết Noel
+function snowEffect(){
+  for(let i=0;i<20;i++){
+    let s = document.createElement("div");
+    s.className="snowflake";
+    s.style.left = (Math.random()*window.innerWidth)+"px";
+    s.style.top = (-20 - Math.random()*50)+"px";
+    let size = 5 + Math.random()*5;
+    s.style.width = size+"px";
+    s.style.height = size+"px";
+    document.body.appendChild(s);
+    setTimeout(()=>s.remove(),5000);
+  }
+}
+</script>
+</body>
+</html>
