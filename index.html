@@ -24,6 +24,20 @@
   #top-buttons{position:fixed;right:10px;top:10px;display:flex;flex-direction:column;gap:8px;z-index:400}
   .top-btn{padding:10px 14px;font-size:14px;border:0;border-radius:12px;background:var(--pink);color:var(--white);cursor:pointer;box-shadow:0 4px 10px rgba(0,0,0,.15)}
   .top-btn:active{transform:scale(.98)}
+
+  /* ---- NÚT FULLSCREEN ---- */
+  #btnFull {
+    padding:10px 14px;
+    font-size:14px;
+    border:0;
+    border-radius:12px;
+    background:#444;
+    color:white;
+    cursor:pointer;
+    box-shadow:0 4px 10px rgba(0,0,0,.2);
+  }
+  #btnFull:active{transform:scale(.98)}
+
   #result-area{width:100%;display:flex;justify-content:center;gap:4vw;min-height:18vh;margin-top:6vh;pointer-events:none}
   .result-item{width:28vw;max-width:220px;height:28vw;max-height:220px;background:var(--white);border-radius:18px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(0,0,0,.18)}
   .result-item img{width:88%;height:88%;object-fit:contain}
@@ -56,6 +70,7 @@
   <button id="btnStart" class="top-btn">Bắt đầu</button>
   <button id="btnRestart" class="top-btn">Chơi lại</button>
   <button id="btnEnd" class="top-btn">Kết thúc</button>
+  <button id="btnFull">🔳 Full màn hình</button>
 </div>
 
 <div id="result-area"></div>
@@ -96,6 +111,31 @@ const btnEnd = document.getElementById("btnEnd");
 const btnListen = document.getElementById("btnListen");
 const btnNext = document.getElementById("btnNext");
 const resultArea = document.getElementById("result-area");
+
+/* ---------------- FULLSCREEN ---------------- */
+const btnFull = document.getElementById("btnFull");
+
+btnFull.addEventListener("click", () => {
+  let elem = document.documentElement;
+
+  if (!document.fullscreenElement &&
+      !document.webkitFullscreenElement &&
+      !document.msFullscreenElement) {
+
+      if (elem.requestFullscreen) elem.requestFullscreen();
+      else if (elem.webkitRequestFullscreen) elem.webkitRequestFullscreen();
+      else if (elem.msRequestFullscreen) elem.msRequestFullscreen();
+
+      btnFull.textContent = "❎ Thoát full màn hình";
+  } else {
+      if (document.exitFullscreen) document.exitFullscreen();
+      else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+      else if (document.msExitFullscreen) document.msExitFullscreen();
+
+      btnFull.textContent = "🔳 Full màn hình";
+  }
+});
+/* ------------------------------------------- */
 
 async function unlockAudio(){
   try{
