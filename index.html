@@ -5,31 +5,33 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
 <title>Nghe và tìm chữ — Mobile Ready</title>
 <style>
+  @font-face {
+    font-family: "UTM Avo";
+    src: url("fonts/UTMAvo.ttf") format("truetype");
+    font-weight: normal;
+    font-style: normal;
+  }
   :root{
     --pink:#ff6bcb; --purple:#6c5ce7; --white:#fff;
   }
-  html,body{height:100%;margin:0;padding:0;font-family:"Comic Sans MS",sans-serif;background:linear-gradient(135deg,#f6d365,#fda085);-webkit-tap-highlight-color:transparent;}
+  html,body{
+    height:100%;margin:0;padding:0;
+    font-family:"UTM Avo", sans-serif;
+    background:linear-gradient(135deg,#f6d365,#fda085);
+    -webkit-tap-highlight-color:transparent;
+  }
   body{display:flex;flex-direction:column;align-items:center;overflow:hidden;}
-
-/* top controls */
   #top-buttons{position:fixed;right:10px;top:10px;display:flex;flex-direction:column;gap:8px;z-index:400}
   .top-btn{padding:10px 14px;font-size:14px;border:0;border-radius:12px;background:var(--pink);color:var(--white);cursor:pointer;box-shadow:0 4px 10px rgba(0,0,0,.15)}
   .top-btn:active{transform:scale(.98)}
-
-/* result area (ảnh hiện lên khi đúng) */
   #result-area{width:100%;display:flex;justify-content:center;gap:4vw;min-height:18vh;margin-top:6vh;pointer-events:none}
   .result-item{width:28vw;max-width:220px;height:28vw;max-height:220px;background:var(--white);border-radius:18px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(0,0,0,.18)}
   .result-item img{width:88%;height:88%;object-fit:contain}
-
-/* 3 ô chữ đặt lên cao hơn (gần giữa) */
   #letters{display:flex;gap:4vw;justify-content:center;margin-top:4vh;transform:translateY(-1vh);z-index:100}
   .letter-box{width:28vw;max-width:220px;height:28vw;max-height:220px;background:var(--white);border-radius:22px;display:flex;align-items:center;justify-content:center;font-size:clamp(64px,10vw,120px);box-shadow:0 6px 18px rgba(0,0,0,.18);touch-action:manipulation;user-select:none;cursor:pointer}
   .letter-box:active{transform:scale(.96)}
   .letter-box.shake{animation:shake .42s}
   @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-10px)}50%{transform:translateX(10px)}75%{transform:translateX(-10px)}}
-
-/* big listen button (vị trí cố định, 1 vị trí cho 2 nút) */
-/* nhỏ ~1.5 lần so với trước: sử dụng font-size và padding nhỏ hơn */
   .big-btn{
     position:fixed;left:50%;transform:translateX(-50%);
     bottom:18px;z-index:300;
@@ -38,14 +40,10 @@
     display:none;touch-action:manipulation;cursor:pointer;
   }
   .big-btn:active{transform:translateX(-50%) scale(.98)}
-
-/* small devices adjustments */
   @media (max-width:420px){
     .letter-box{width:30vw;height:30vw}
     .result-item{width:34vw;height:34vw}
   }
-
-/* effects */
   .firework{position:fixed;width:10px;height:10px;border-radius:50%;background:yellow;pointer-events:none;animation:boom 1s forwards}
   @keyframes boom{0%{transform:scale(1);opacity:1}100%{transform:scale(18);opacity:0}}
   .snowflake{position:fixed;width:8px;height:8px;border-radius:50%;background:white;pointer-events:none;animation:snow linear infinite}
@@ -54,29 +52,24 @@
 </head>
 <body>
 
-<!-- Controls top-right -->
 <div id="top-buttons">
   <button id="btnStart" class="top-btn">Bắt đầu</button>
   <button id="btnRestart" class="top-btn">Chơi lại</button>
   <button id="btnEnd" class="top-btn">Kết thúc</button>
 </div>
 
-<!-- result ảnh -->
 <div id="result-area"></div>
 
-<!-- 3 chữ -->
 <div id="letters">
   <div class="letter-box" data-letter="a">a</div>
   <div class="letter-box" data-letter="ă">ă</div>
   <div class="letter-box" data-letter="â">â</div>
 </div>
 
-<!-- Listen (chung một vị trí) -->
 <button id="btnListen" class="big-btn">Nghe</button>
 <button id="btnNext" class="big-btn">Nghe tiếp</button>
 
 <script>
-/* ===== helper load audio (mobile friendly) ===== */
 function makeAudio(src){
   const a = new Audio(src);
   a.preload = 'auto';
@@ -84,7 +77,6 @@ function makeAudio(src){
   return a;
 }
 
-/* nếu cô dùng tên file có dấu, giữ nguyên; nếu đổi tên file, chỉnh đường dẫn tương ứng */
 const sounds = {
   "a": makeAudio("audio/a.mp3"),
   "ă": makeAudio("audio/ă.mp3"),
@@ -94,12 +86,10 @@ const sounds = {
   "complete": makeAudio("audio/complete.mp3")
 };
 
-/* trạng thái game */
 let remaining = [];
 let currentLetter = "";
 let gameActive = false;
 
-/* nút */
 const btnStart = document.getElementById("btnStart");
 const btnRestart = document.getElementById("btnRestart");
 const btnEnd = document.getElementById("btnEnd");
@@ -107,27 +97,21 @@ const btnListen = document.getElementById("btnListen");
 const btnNext = document.getElementById("btnNext");
 const resultArea = document.getElementById("result-area");
 
-/* unlock audio on first user gesture (Start / Restart) but do NOT play sound */
 async function unlockAudio(){
-  // try to play and pause to unlock WebAudio on iOS/Android WebView
   try{
     for(const k in sounds){
       const s = sounds[k];
-      // play briefly muted then pause to unlock codec
       s.muted = true;
       await s.play().catch(()=>{});
       s.pause();
       s.currentTime = 0;
       s.muted = false;
     }
-  }catch(e){
-    // ignore
-  }
+  }catch(e){}
 }
 
-/* start handler (does not play any audio) */
 async function startGame(){
-  await unlockAudio(); // unlock audio so later plays work on mobile
+  await unlockAudio();
   remaining = ["a","ă","â"];
   currentLetter = "";
   gameActive = true;
@@ -136,28 +120,20 @@ async function startGame(){
   btnNext.style.display = "none";
 }
 
-/* restart same as start */
-async function restartGame(){
-  await startGame();
-}
+async function restartGame(){ await startGame(); }
 
-/* end game: stop audios, clear effects, reset */
 function endGame(){
   gameActive = false;
   currentLetter = "";
   btnListen.style.display = "none";
   btnNext.style.display = "none";
-  // stop all sounds
   for(const k in sounds){
     try{ sounds[k].pause(); sounds[k].currentTime = 0; }catch(e){}
   }
-  // remove flying effects
   document.querySelectorAll(".firework, .snowflake").forEach(n=>n.remove());
-  // optional: clear results and show start screen
   resultArea.innerHTML = "";
 }
 
-/* choose next letter (random) */
 function chooseNextLetter(){
   if(remaining.length === 0){ finishGame(); return; }
   currentLetter = remaining[Math.floor(Math.random()*remaining.length)];
@@ -165,18 +141,16 @@ function chooseNextLetter(){
   btnNext.style.display = "none";
 }
 
-/* play audio safely */
 function playSound(key){
   if(!sounds[key]) return;
   try{
     sounds[key].pause();
     sounds[key].currentTime = 0;
     const p = sounds[key].play();
-    if(p && p.catch) p.catch(()=>{}); // swallow promise rejection
+    if(p && p.catch) p.catch(()=>{});
   }catch(e){}
 }
 
-/* Listen & Next buttons */
 btnListen.addEventListener("click", ()=>{
   if(!gameActive) return;
   if(currentLetter==="") chooseNextLetter();
@@ -188,11 +162,10 @@ btnNext.addEventListener("click", ()=>{
   if(currentLetter) playSound(currentLetter);
 });
 
-/* support touchstart too for faster mobile response */
 [...document.querySelectorAll(".letter-box")].forEach(box=>{
   const handler = ()=> {
     if(!gameActive) return;
-    if(currentLetter==="") return; // chưa có letter để so sánh
+    if(currentLetter==="") return;
     const chosen = box.dataset.letter;
     if(chosen === currentLetter) correctAnswer(chosen);
     else wrongAnswer(box);
@@ -201,32 +174,22 @@ btnNext.addEventListener("click", ()=>{
   box.addEventListener("touchstart", e=>{ e.preventDefault(); handler(); });
 });
 
-/* wrong */
 function wrongAnswer(box){
   playSound("wrong");
   box.classList.add("shake");
   setTimeout(()=>box.classList.remove("shake"),420);
 }
 
-/* correct */
 function correctAnswer(letter){
   playSound("correct");
-  // show result image
   const d = document.createElement("div");
   d.className = "result-item";
-  // keep same filename pattern used trước: images/a.png, images/ă.png, images/â.png
   d.innerHTML = `<img src="images/${letter}.png" alt="${letter}">`;
   resultArea.appendChild(d);
-
-  // remove letter khỏi danh sách
   remaining = remaining.filter(l=>l!==letter);
   currentLetter = "";
-
-  // hiệu ứng
   fireworks();
   snowEffect();
-
-  // show next button only if còn chữ
   if(remaining.length>0){
     btnListen.style.display = "none";
     btnNext.style.display = "block";
@@ -235,7 +198,6 @@ function correctAnswer(letter){
   }
 }
 
-/* finish game */
 function finishGame(){
   gameActive = false;
   btnListen.style.display = "none";
@@ -244,7 +206,6 @@ function finishGame(){
   playSound("complete");
 }
 
-/* fireworks */
 function fireworks(){
   for(let i=0;i<10;i++){
     const f = document.createElement("div");
@@ -256,7 +217,6 @@ function fireworks(){
   }
 }
 
-/* snow */
 function snowEffect(){
   for(let i=0;i<14;i++){
     const s = document.createElement("div");
@@ -269,17 +229,14 @@ function snowEffect(){
   }
 }
 
-/* attach top buttons */
 btnStart.addEventListener("click", startGame);
 btnRestart.addEventListener("click", restartGame);
 btnEnd.addEventListener("click", endGame);
 
-/* also support touch on top buttons (for some mobile browsers) */
 btnStart.addEventListener("touchstart", e=>{ e.preventDefault(); startGame(); });
 btnRestart.addEventListener("touchstart", e=>{ e.preventDefault(); restartGame(); });
 btnEnd.addEventListener("touchstart", e=>{ e.preventDefault(); endGame(); });
 
-/* initial state: show only Start */
 (function init(){
   btnListen.style.display = "none";
   btnNext.style.display = "none";
